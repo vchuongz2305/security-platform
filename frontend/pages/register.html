@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Đăng Ký - Password Security Demo</title>
+  <meta name="description" content="Đăng ký tài khoản với mật khẩu mạnh. Công cụ phân tích độ mạnh mật khẩu theo thời gian thực." />
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <div class="bg-mesh"></div>
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+
+  <div class="page-container">
+    <div class="center-container">
+      <div class="card card-auth" style="max-width:520px;">
+
+        <!-- Brand -->
+        <div class="brand">
+          <div class="brand-icon">🛡️</div>
+          <h1>Tạo Tài Khoản</h1>
+          <p>Sử dụng mật khẩu mạnh để bảo vệ tài khoản của bạn</p>
+        </div>
+
+        <!-- Alert -->
+        <div id="register-alert"></div>
+
+        <form id="register-form" novalidate>
+          <!-- Email -->
+          <div class="form-group">
+            <label class="form-label" for="reg-email">Email</label>
+            <div class="input-wrapper">
+              <span class="input-icon">📧</span>
+              <input type="email" id="reg-email" class="form-input" placeholder="you@example.com" autocomplete="email" required />
+            </div>
+          </div>
+
+          <!-- Password -->
+          <div class="form-group">
+            <label class="form-label" for="reg-password">Mật khẩu</label>
+            <div class="input-wrapper">
+              <span class="input-icon">🔑</span>
+              <input type="password" id="reg-password" class="form-input" placeholder="Tạo mật khẩu mạnh..." autocomplete="new-password" required />
+              <button type="button" class="input-toggle" id="toggle-reg-password">👁️</button>
+            </div>
+
+            <!-- Strength Meter (FR2-aware) -->
+            <div id="strength-container" class="strength-meter" style="display:none;">
+              <div class="strength-bar-track">
+                <div class="strength-bar-fill"></div>
+              </div>
+              <div class="strength-label"></div>
+              <!-- FR2 Policy Checks -->
+              <div class="strength-checks" id="policy-checks">
+                <span class="strength-check fail" id="chk-length"><span class="check-icon">○</span> ≥ 12 ký tự</span>
+                <span class="strength-check fail" id="chk-upper"><span class="check-icon">○</span> Chữ hoa (A-Z)</span>
+                <span class="strength-check fail" id="chk-lower"><span class="check-icon">○</span> Chữ thường (a-z)</span>
+                <span class="strength-check fail" id="chk-number"><span class="check-icon">○</span> Số (0-9)</span>
+                <span class="strength-check fail" id="chk-special"><span class="check-icon">○</span> Ký tự đặc biệt (!@#...)</span>
+                <span class="strength-check fail" id="chk-sequence"><span class="check-icon">○</span> Không chuỗi tuần tự</span>
+                <span class="strength-check fail" id="chk-entropy"><span class="check-icon">○</span> Đủ mạnh (score ≥ 3/4)</span>
+              </div>
+              <div class="strength-feedback" style="display:none;font-size:0.75rem;color:var(--accent-yellow);margin-top:6px;"></div>
+            </div>
+          </div>
+
+          <!-- Confirm Password -->
+          <div class="form-group">
+            <label class="form-label" for="reg-confirm">Xác nhận mật khẩu</label>
+            <div class="input-wrapper">
+              <span class="input-icon">🔒</span>
+              <input type="password" id="reg-confirm" class="form-input" placeholder="Nhập lại mật khẩu..." autocomplete="new-password" required />
+            </div>
+            <div id="match-indicator" style="font-size:0.75rem;margin-top:6px;display:none;"></div>
+          </div>
+
+          <!-- Generator shortcut -->
+          <div style="margin-bottom:20px;">
+            <button type="button" class="btn btn-secondary btn-sm" id="quick-gen-btn" style="width:100%;">
+              ⚡ Tạo mật khẩu mạnh tự động
+            </button>
+          </div>
+
+          <button type="submit" class="btn btn-primary" id="register-btn">
+            <span class="btn-text">✨ Tạo Tài Khoản</span>
+            <span class="btn-loader" style="display:none"></span>
+          </button>
+        </form>
+
+        <!-- FR2 Policy Banner -->
+        <div id="policy-banner" style="margin-top:16px;padding:14px;background:rgba(6,182,212,0.05);border:1px solid rgba(6,182,212,0.2);border-radius:var(--radius-md);">
+          <p style="font-size:0.75rem;color:var(--accent-cyan);margin-bottom:8px;font-weight:600;">🏢 Chính sách mật khẩu doanh nghiệp (FR2):</p>
+          <ul class="info-list" style="font-size:0.75rem;" id="policy-rules-list">
+            <li><span class="li-icon">🔢</span> Tối thiểu <strong>12 ký tự</strong></li>
+            <li><span class="li-icon">🔠</span> Ít nhất 1 chữ <strong>HOA</strong> (A-Z)</li>
+            <li><span class="li-icon">🔡</span> Ít nhất 1 chữ <strong>thường</strong> (a-z)</li>
+            <li><span class="li-icon">🔢</span> Ít nhất 1 <strong>chữ số</strong> (0-9)</li>
+            <li><span class="li-icon">🔣</span> Ít nhất 1 <strong>ký tự đặc biệt</strong> (!@#$%^&amp;*...)</li>
+            <li><span class="li-icon">🚫</span> Không có chuỗi tuần tự (abcd, 1234, qwerty)</li>
+            <li><span class="li-icon">📜</span> Không trùng 5 mật khẩu gần nhất</li>
+            <li><span class="li-icon">💪</span> Độ mạnh zxcvbn ≥ 3/4</li>
+          </ul>
+        </div>
+
+        <div class="divider" style="margin-top:16px;"></div>
+        <p class="text-center text-sm text-muted">
+          Đã có tài khoản? <a href="/" class="link">Đăng nhập</a>
+        </p>
+
+      </div><!-- /card -->
+    </div>
+  </div>
+
+  <script src="/js/auth.js"></script>
+  <script>
+    Guards.redirectIfLoggedIn();
+
+    const pwdInput     = document.getElementById('reg-password');
+    const confirmInput = document.getElementById('reg-confirm');
+    const toggleBtn    = document.getElementById('toggle-reg-password');
+
+    // Toggle visibility
+    toggleBtn.addEventListener('click', () => {
+      const show = pwdInput.type === 'password';
+      pwdInput.type = show ? 'text' : 'password';
+      toggleBtn.textContent = show ? '🙈' : '👁️';
+    });
+
+    // FR2 real-time policy checks
+    function updatePolicyChecks(pwd) {
+      const set = (id, ok) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.classList.toggle('ok',   ok);
+        el.classList.toggle('fail', !ok);
+        el.querySelector('.check-icon').textContent = ok ? '✓' : '○';
+      };
+      set('chk-length',   pwd.length >= 12);
+      set('chk-upper',    /[A-Z]/.test(pwd));
+      set('chk-lower',    /[a-z]/.test(pwd));
+      set('chk-number',   /[0-9]/.test(pwd));
+      set('chk-special',  /[!@#$%^&*()\-_=+\[\]{}|;:,.<>?/~`]/.test(pwd));
+      const noSeq = !/(abcd|bcde|cdef|defg|efgh|fghi|ghij|hijk|ijkl|jklm|klmn|lmno|mnop|nopq|opqr|pqrs|qrst|rstu|stuv|tuvw|uvwx|vwxy|wxyz|0123|1234|2345|3456|4567|5678|6789|qwer|wert|erty|rtyy|tyui|yuio|uiop|asdf|sdfg|dfgh|fghj|ghjk|hjkl|zxcv|xcvb|cvbn|vbnm)/i.test(pwd);
+      set('chk-sequence', noSeq);
+      // entropy check updated by the API call in updateStrengthMeter
+    }
+
+    // Live strength meter
+    pwdInput.addEventListener('input', () => {
+      const pwd = pwdInput.value;
+      UI.updateStrengthMeter(pwd, 'strength-container');
+      updatePolicyChecks(pwd);
+      checkMatch();
+    });
+
+    // Confirm match
+    confirmInput.addEventListener('input', checkMatch);
+
+    function checkMatch() {
+      const ind = document.getElementById('match-indicator');
+      if (!confirmInput.value) { ind.style.display = 'none'; return; }
+      ind.style.display = 'block';
+      if (pwdInput.value === confirmInput.value) {
+        ind.innerHTML = '<span style="color:var(--accent-green)">✓ Mật khẩu khớp</span>';
+      } else {
+        ind.innerHTML = '<span style="color:var(--accent-red)">✗ Mật khẩu không khớp</span>';
+      }
+    }
+
+    // Quick generate
+    document.getElementById('quick-gen-btn').addEventListener('click', async () => {
+      const { ok, data } = await Auth.apiCall('GET', '/tools/generate?length=20');
+      if (ok) {
+        pwdInput.value    = data.password;
+        confirmInput.value= data.password;
+        pwdInput.type     = 'text';
+        toggleBtn.textContent = '🙈';
+        UI.updateStrengthMeter(data.password, 'strength-container');
+        checkMatch();
+        Auth.showToast('success', 'Mật khẩu đã tạo!', 'Nhớ lưu vào trình quản lý mật khẩu');
+      }
+    });
+
+    // Submit
+    document.getElementById('register-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      Auth.clearAlert('register-alert');
+
+      const email    = document.getElementById('reg-email').value.trim();
+      const password = pwdInput.value;
+      const confirm  = confirmInput.value;
+
+      if (!email || !password) {
+        return Auth.showAlert('register-alert', 'error', '⚠️', 'Vui lòng điền đầy đủ thông tin.');
+      }
+      if (password !== confirm) {
+        return Auth.showAlert('register-alert', 'error', '❌', 'Mật khẩu xác nhận không khớp.');
+      }
+
+      Auth.setButtonLoading('register-btn', true);
+      const { ok, data } = await Auth.apiCall('POST', '/register', { email, password });
+      Auth.setButtonLoading('register-btn', false);
+
+      if (!ok) {
+        // FR2: show detailed policy violations if available
+        if (data.violations && data.violations.length) {
+          const html = '<strong>Vi phạm chính sách mật khẩu:</strong><ul style="margin:6px 0 0;padding-left:16px;">' +
+            data.violations.map(v => `<li style="font-size:0.82rem;margin-top:4px;">${v}</li>`).join('') + '</ul>';
+          return Auth.showAlert('register-alert', 'error', '🚫', html);
+        }
+        const msg = data.analysis
+          ? `${data.message} (${data.analysis.label} — crack time: ${data.analysis.crackTimeDisplay})`
+          : data.message;
+        return Auth.showAlert('register-alert', 'error', '❌', msg);
+      }
+
+      Auth.Storage.setToken(data.token);
+      Auth.Storage.setUser(data.user);
+      Auth.showToast('success', '🎉 Tài khoản đã tạo!', 'Đang chuyển đến dashboard...');
+      setTimeout(() => { window.location.href = '/dashboard'; }, 1000);
+    });
+  </script>
+</body>
+</html>
