@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Đăng Nhập - Password Security Demo</title>
+  <meta name="description" content="Demo bảo mật mật khẩu: Đăng nhập an toàn với bảo vệ brute-force và xác thực 2 yếu tố (2FA)." />
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <!-- Animated Background -->
+  <div class="bg-mesh"></div>
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+
+  <div class="page-container">
+    <div class="center-container">
+      <div class="card card-auth">
+
+        <!-- Brand -->
+        <div class="brand">
+          <div class="brand-icon">🔐</div>
+          <h1>Security Demo</h1>
+          <p>Lab an toàn mật khẩu &amp; xác thực 2FA</p>
+        </div>
+
+        <!-- Alert Area -->
+        <div id="login-alert"></div>
+
+        <!-- Step 1: Password Login -->
+        <div id="step-password">
+          <form id="login-form" novalidate>
+            <div class="form-group">
+              <label class="form-label" for="email">Email</label>
+              <div class="input-wrapper">
+                <span class="input-icon">📧</span>
+                <input
+                  type="email"
+                  id="email"
+                  class="form-input"
+                  placeholder="you@example.com"
+                  autocomplete="email"
+                  required
+                />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="password">Mật khẩu</label>
+              <div class="input-wrapper">
+                <span class="input-icon">🔑</span>
+                <input
+                  type="password"
+                  id="login-password"
+                  class="form-input"
+                  placeholder="Nhập mật khẩu..."
+                  autocomplete="current-password"
+                  required
+                />
+                <button type="button" class="input-toggle" id="toggle-password" title="Hiện/ẩn mật khẩu">👁️</button>
+              </div>
+            </div>
+
+            <div class="form-group" style="margin-top:12px;display:flex;align-items:center;gap:10px;">
+              <input type="checkbox" id="trust-device" style="width:16px;height:16px;accent-color:var(--accent-cyan);" />
+              <label for="trust-device" style="margin:0;font-size:0.9rem;color:var(--text-secondary);">Tin cậy thiết bị này để đăng nhập nhiều lần</label>
+            </div>
+
+            <button type="submit" class="btn btn-primary" id="login-btn">
+              <span class="btn-text">🚀 Đăng Nhập</span>
+              <span class="btn-loader" style="display:none"></span>
+            </button>
+          </form>
+
+
+          <!-- Security info -->
+          <div class="card" style="padding:14px;margin-bottom:16px;background:rgba(6,182,212,0.05);border-color:rgba(6,182,212,0.2);">
+            <p style="font-size:0.78rem;color:var(--text-secondary);margin:0;">
+              🛡️ <strong style="color:var(--accent-cyan)">Bảo vệ tích hợp:</strong>
+              Tài khoản bị khóa sau 5 lần đăng nhập sai liên tiếp (15 phút).
+              Mật khẩu được hash với bcrypt (12 rounds).
+            </p>
+          </div>
+
+          <p class="text-center text-sm text-muted">
+            Chưa có tài khoản? <a href="/register" class="link">Đăng ký ngay</a>
+          </p>
+          <p class="text-center text-sm" style="margin-top:15px;">
+             <a href="/attack-lab" class="link" style="color:var(--accent-cyan); font-weight:700;">🧪 Thử nghiệm Attack Lab (Demo)</a>
+          </p>
+        </div>
+
+        <!-- Step 2: 2FA Verification -->
+        <div id="step-2fa" style="display:none">
+          <div style="text-align:center;margin-bottom:20px;">
+            <div style="font-size:3rem;margin-bottom:12px;">📱</div>
+            <h2 style="font-size:1.2rem;font-weight:700;margin-bottom:6px;">Xác thực 2 yếu tố</h2>
+            <p style="font-size:0.85rem;color:var(--text-secondary);">
+              Mở ứng dụng xác thực (Google Authenticator, Authy...) và nhập mã 6 chữ số.
+            </p>
+          </div>
+
+          <div id="otp-inputs-login" class="otp-inputs">
+            <input class="otp-digit" type="text" maxlength="1" pattern="[0-9]" inputmode="numeric" />
+            <input class="otp-digit" type="text" maxlength="1" pattern="[0-9]" inputmode="numeric" />
+            <input class="otp-digit" type="text" maxlength="1" pattern="[0-9]" inputmode="numeric" />
+            <input class="otp-digit" type="text" maxlength="1" pattern="[0-9]" inputmode="numeric" />
+            <input class="otp-digit" type="text" maxlength="1" pattern="[0-9]" inputmode="numeric" />
+            <input class="otp-digit" type="text" maxlength="1" pattern="[0-9]" inputmode="numeric" />
+          </div>
+
+          <button class="btn btn-primary" id="verify-2fa-btn">
+            <span class="btn-text">✅ Xác nhận</span>
+            <span class="btn-loader" style="display:none"></span>
+          </button>
+
+          <button class="btn btn-secondary btn-block" id="back-to-password" style="margin-top:10px;">
+            ← Quay lại
+          </button>
+        </div>
+
+      </div><!-- /card -->
+    </div>
+  </div>
+
+  <script src="/js/auth.js"></script>
+  <script>
+    // Redirect if already logged in
+    Guards.redirectIfLoggedIn();
+
+
+    const form      = document.getElementById('login-form');
+    const toggleBtn = document.getElementById('toggle-password');
+    const pwdInput  = document.getElementById('login-password');
+
+    // Toggle password visibility
+    toggleBtn.addEventListener('click', () => {
+      const show = pwdInput.type === 'password';
+      pwdInput.type = show ? 'text' : 'password';
+      toggleBtn.textContent = show ? '🙈' : '👁️';
+    });
+
+    // Step 1: Login with password
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      Auth.clearAlert('login-alert');
+
+      const email    = document.getElementById('email').value.trim();
+      const password = pwdInput.value;
+      const trustDevice = document.getElementById('trust-device')?.checked;
+
+      if (!email || !password) {
+        return Auth.showAlert('login-alert', 'error', '⚠️', 'Vui lòng nhập đầy đủ thông tin.');
+      }
+
+      Auth.setButtonLoading('login-btn', true);
+      const { ok, data } = await Auth.apiCall('POST', '/login', { email, password, trustDevice });
+      Auth.setButtonLoading('login-btn', false);
+
+      if (!ok) {
+        const msg = data.locked
+          ? `🔒 ${data.message}`
+          : `❌ ${data.message}`;
+        return Auth.showAlert('login-alert', data.locked ? 'warning' : 'error', '', msg);
+      }
+
+      if (data.requires2FA) {
+        // Show 2FA step
+        Auth.Storage.setPending2FA(data.pendingToken);
+        document.getElementById('step-password').style.display = 'none';
+        document.getElementById('step-2fa').style.display = 'block';
+        Auth.clearAlert('login-alert');
+        UI.initOTPInputs('otp-inputs-login', (code) => verify2FA(code));
+        Auth.showAlert('login-alert', 'info', '📱', data.message);
+      } else {
+        // Login successful without 2FA
+        Auth.Storage.setToken(data.token);
+        if (data.refreshToken) Auth.Storage.setRefreshToken(data.refreshToken);
+        Auth.Storage.setUser(data.user);
+        if (data.deviceTrusted) {
+          Auth.showToast('success', 'Đăng nhập thành công!', `Thiết bị này đã được tin cậy cho lần sau.`);
+        }
+        const redirectUrl = data.user.role === 'admin' ? '/admin' : '/dashboard';
+        setTimeout(() => { window.location.href = redirectUrl; }, 800);
+      }
+    });
+    
+    // Step 2: Verify 2FA code
+    async function verify2FA(code) {
+      const pendingToken = Auth.Storage.getPending2FA();
+      if (!pendingToken) return;
+
+      Auth.setButtonLoading('verify-2fa-btn', true);
+      const { ok, data } = await Auth.apiCall('POST', '/login/verify-2fa', {
+        token: code,
+        pendingToken,
+      });
+      Auth.setButtonLoading('verify-2fa-btn', false);
+
+      if (!ok) {
+        Auth.showAlert('login-alert', 'error', '❌', data.message);
+        UI.clearOTPInputs('otp-inputs-login');
+        return;
+      }
+
+      Auth.Storage.setToken(data.token);
+      if (data.refreshToken) Auth.Storage.setRefreshToken(data.refreshToken);
+      Auth.Storage.setUser(data.user);
+      Auth.Storage.clearPending();
+      Auth.showToast('success', '✅ Xác thực thành công!', '2FA hợp lệ - đang chuyển hướng...');
+      const redirectUrl = data.user.role === 'admin' ? '/admin' : '/dashboard';
+      setTimeout(() => { window.location.href = redirectUrl; }, 800);
+    }
+
+    document.getElementById('verify-2fa-btn').addEventListener('click', () => {
+      const code = UI.getOTPValue('otp-inputs-login');
+      if (code.length !== 6) return Auth.showAlert('login-alert', 'warning', '⚠️', 'Vui lòng nhập đủ 6 chữ số.');
+      verify2FA(code);
+    });
+
+    document.getElementById('back-to-password').addEventListener('click', () => {
+      document.getElementById('step-password').style.display = 'block';
+      document.getElementById('step-2fa').style.display = 'none';
+      Auth.Storage.clearPending();
+      Auth.clearAlert('login-alert');
+    });
+  </script>
+</body>
+</html>
